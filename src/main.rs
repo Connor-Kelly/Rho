@@ -31,8 +31,8 @@ fn main() {
 
     let contents = "str s = \"rho_is_cool\"\n";
 
-    // println!("{:?}", contents.split_once(|c: char| c.is_whitespace()));
-    println!("{:?}", contents);
+    // // println!("{:?}", contents.split_once(|c: char| c.is_whitespace()));
+    // println!("{:?}", contents);
     println!("tokenize output: {:?}", tokenize(contents));
 
     // let s = "\"asdfklsdjfa\\\"\" asdf";
@@ -57,7 +57,7 @@ fn main() {
     // let tokens = tokenize("true false");
     // println!("{:?}\n", tokens);
 
-    println!("{:?}", parsers::parse_keyword("func"))
+    // println!("{:?}", parsers::parse_keyword("func"))
     // println!(
     //     "{:?}",
     //     matches!(
