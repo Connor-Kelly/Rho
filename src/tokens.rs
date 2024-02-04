@@ -8,17 +8,20 @@ pub struct Token {
 
 impl fmt::Debug for Token {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "T[{} {:?}]", self.string, self.token_type)
+        writeln!(f, ":[{:?}, {:?}]", self.token_type, self.string)
     }
 }
 
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenType {
     Type(Types),
+    Literal(Literals),
     Keyword(Keywords),
     Operator(Operators),
+    Delimiter(Delimiters),
     EoF,
     Identifier,
+    Comment,
 }
 
 #[derive(Debug, Clone, PartialEq)]
@@ -56,6 +59,12 @@ pub enum Types {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+pub enum Literals {
+    Primitive(PrimitiveType),
+    BuiltIn(BuiltinType),
+}
+
+#[derive(Debug, Clone, PartialEq)]
 pub enum PrimitiveType {
     Int,
     Float,
@@ -76,107 +85,137 @@ pub enum BuiltinType {
     Stream, // not entirely sure how the stream works...
 }
 
-pub fn string_to_type(string: &str) -> Result<(&str, Types), &str> {
+pub fn tokenize_type(string: &str) -> Result<(&str, TokenType), &str> {
     // Stream,
     if string.starts_with("stream") {
-        return Ok(("stream", Types::BuiltIn(BuiltinType::Stream)));
+        return Ok((
+            "stream",
+            TokenType::Type(Types::BuiltIn(BuiltinType::Stream)),
+        ));
     }
     // String,
     else if string.starts_with("str") {
-        return Ok(("str", Types::BuiltIn(BuiltinType::String)));
+        return Ok(("str", TokenType::Type(Types::BuiltIn(BuiltinType::String))));
     }
     // Enum,
     else if string.starts_with("enum") {
-        return Ok(("enum", Types::BuiltIn(BuiltinType::Enum)));
+        return Ok(("enum", TokenType::Type(Types::BuiltIn(BuiltinType::Enum))));
     }
     // Tuple,
     else if string.starts_with("tuple") {
-        return Ok(("tuple", Types::BuiltIn(BuiltinType::Tuple)));
+        return Ok(("tuple", TokenType::Type(Types::BuiltIn(BuiltinType::Tuple))));
     }
     // List,
     else if string.starts_with("list") {
-        return Ok(("list", Types::BuiltIn(BuiltinType::List)));
+        return Ok(("list", TokenType::Type(Types::BuiltIn(BuiltinType::List))));
     }
     // Range,
     else if string.starts_with("range") {
-        return Ok(("range", Types::BuiltIn(BuiltinType::Range)));
+        return Ok(("range", TokenType::Type(Types::BuiltIn(BuiltinType::Range))));
     }
     // Map,
     else if string.starts_with("map") {
-        return Ok(("map", Types::BuiltIn(BuiltinType::Map)));
+        return Ok(("map", TokenType::Type(Types::BuiltIn(BuiltinType::Map))));
     }
     // Int,
     else if string.starts_with("int") {
-        return Ok(("int", Types::Primitive(PrimitiveType::Int)));
+        return Ok(("int", TokenType::Type(Types::Primitive(PrimitiveType::Int))));
     }
     // Float,
     else if string.starts_with("float") {
-        return Ok(("float", Types::Primitive(PrimitiveType::Float)));
+        return Ok((
+            "float",
+            TokenType::Type(Types::Primitive(PrimitiveType::Float)),
+        ));
     }
     // Bool,
     else if string.starts_with("bool") {
-        return Ok(("bool", Types::Primitive(PrimitiveType::Bool)));
+        return Ok((
+            "bool",
+            TokenType::Type(Types::Primitive(PrimitiveType::Bool)),
+        ));
     }
     // Char,
     else if string.starts_with("char") {
-        return Ok(("char", Types::Primitive(PrimitiveType::Char)));
+        return Ok((
+            "char",
+            TokenType::Type(Types::Primitive(PrimitiveType::Char)),
+        ));
     }
     // Atom,
     else if string.starts_with("atom") {
-        return Ok(("atom", Types::Primitive(PrimitiveType::Atom)));
+        return Ok((
+            "atom",
+            TokenType::Type(Types::Primitive(PrimitiveType::Atom)),
+        ));
     }
     Err("Err: no matching type keyword")
 }
 
 #[test]
-fn test_s_to_type() {
+fn test_tokenize_type() {
     assert_eq!(
-        string_to_type("str"),
-        Ok(("str", Types::BuiltIn(BuiltinType::String)))
+        tokenize_type("str"),
+        Ok(("str", TokenType::Type(Types::BuiltIn(BuiltinType::String))))
     );
     assert_eq!(
-        string_to_type("enum"),
-        Ok(("enum", Types::BuiltIn(BuiltinType::Enum)))
+        tokenize_type("enum"),
+        Ok(("enum", TokenType::Type(Types::BuiltIn(BuiltinType::Enum))))
     );
     assert_eq!(
-        string_to_type("tuple"),
-        Ok(("tuple", Types::BuiltIn(BuiltinType::Tuple)))
+        tokenize_type("tuple"),
+        Ok(("tuple", TokenType::Type(Types::BuiltIn(BuiltinType::Tuple))))
     );
     assert_eq!(
-        string_to_type("list"),
-        Ok(("list", Types::BuiltIn(BuiltinType::List)))
+        tokenize_type("list"),
+        Ok(("list", TokenType::Type(Types::BuiltIn(BuiltinType::List))))
     );
     assert_eq!(
-        string_to_type("range"),
-        Ok(("range", Types::BuiltIn(BuiltinType::Range)))
+        tokenize_type("range"),
+        Ok(("range", TokenType::Type(Types::BuiltIn(BuiltinType::Range))))
     );
     assert_eq!(
-        string_to_type("map"),
-        Ok(("map", Types::BuiltIn(BuiltinType::Map)))
+        tokenize_type("map"),
+        Ok(("map", TokenType::Type(Types::BuiltIn(BuiltinType::Map))))
     );
     assert_eq!(
-        string_to_type("stream"),
-        Ok(("stream", Types::BuiltIn(BuiltinType::Stream)))
+        tokenize_type("stream"),
+        Ok((
+            "stream",
+            TokenType::Type(Types::BuiltIn(BuiltinType::Stream))
+        ))
     );
     assert_eq!(
-        string_to_type("int"),
-        Ok(("int", Types::Primitive(PrimitiveType::Int)))
+        tokenize_type("int"),
+        Ok(("int", TokenType::Type(Types::Primitive(PrimitiveType::Int))))
     );
     assert_eq!(
-        string_to_type("float"),
-        Ok(("float", Types::Primitive(PrimitiveType::Float)))
+        tokenize_type("float"),
+        Ok((
+            "float",
+            TokenType::Type(Types::Primitive(PrimitiveType::Float))
+        ))
     );
     assert_eq!(
-        string_to_type("bool"),
-        Ok(("bool", Types::Primitive(PrimitiveType::Bool)))
+        tokenize_type("bool"),
+        Ok((
+            "bool",
+            TokenType::Type(Types::Primitive(PrimitiveType::Bool))
+        ))
     );
     assert_eq!(
-        string_to_type("char"),
-        Ok(("char", Types::Primitive(PrimitiveType::Char)))
+        tokenize_type("char"),
+        Ok((
+            "char",
+            TokenType::Type(Types::Primitive(PrimitiveType::Char))
+        ))
     );
     assert_eq!(
-        string_to_type("atom"),
-        Ok(("atom", Types::Primitive(PrimitiveType::Atom)))
+        tokenize_type("atom"),
+        Ok((
+            "atom",
+            TokenType::Type(Types::Primitive(PrimitiveType::Atom))
+        ))
     );
 }
 
@@ -201,55 +240,59 @@ pub enum Operators {
     Into,        // "->"
     Equal,       // "="
     DoubleDot,   // ".." (for ranges)
+    Pipe,        // "|>"
 }
 
-pub fn operator_to_string(op: Operators) -> &'static str {
-    match op {
-        Operators::Add => "+",
-        Operators::EnumConcat => "++",
-        Operators::Subtract => "-",
-        Operators::Div => "/",
-        Operators::Mult => "*",
-        Operators::Modulo => "%",
-        Operators::Exp => "^",
-        Operators::Concat => "<>",
-        Operators::LessThan => "<",
-        Operators::GreaterThan => ">",
-        Operators::LEq => "<=",
-        Operators::GEq => ">=",
-        Operators::BEq => "==",
-        Operators::BNEq => "!=",
-        Operators::Lshift => "<<",
-        Operators::Rshift => ">>",
-        Operators::Into => "->",
-        Operators::Equal => "=",
-        Operators::DoubleDot => "..",
-    }
-}
-pub fn string_to_operator(string: &str) -> Result<(&str, Operators), &str> {
+// pub fn operator_to_string(op: Operators) -> &'static str {
+//     match op {
+//         Operators::Add => "+",
+//         Operators::EnumConcat => "++",
+//         Operators::Subtract => "-",
+//         Operators::Div => "/",
+//         Operators::Mult => "*",
+//         Operators::Modulo => "%",
+//         Operators::Exp => "^",
+//         Operators::Concat => "<>",
+//         Operators::LessThan => "<",
+//         Operators::GreaterThan => ">",
+//         Operators::LEq => "<=",
+//         Operators::GEq => ">=",
+//         Operators::BEq => "==",
+//         Operators::BNEq => "!=",
+//         Operators::Lshift => "<<",
+//         Operators::Rshift => ">>",
+//         Operators::Into => "->",
+//         Operators::Equal => "=",
+//         Operators::DoubleDot => "..",
+//         Operators::Pipe => "|>"
+//     }
+// }
+
+pub fn tokenize_operator(string: &str) -> Result<(&str, TokenType), &str> {
     match string.chars().take(2).collect::<String>().as_str() {
-        "++" => return Ok(("++", Operators::EnumConcat)),
-        "<>" => return Ok(("<>", Operators::Concat)),
-        "<=" => return Ok(("<=", Operators::LEq)),
-        ">=" => return Ok((">=", Operators::GEq)),
-        "==" => return Ok(("==", Operators::BEq)),
-        "!=" => return Ok(("!=", Operators::BNEq)),
-        "<<" => return Ok(("<<", Operators::Lshift)),
-        ">>" => return Ok((">>", Operators::Rshift)),
-        "->" => return Ok(("->", Operators::Into)),
-        ".." => return Ok(("..", Operators::DoubleDot)),
+        "++" => return Ok(("++", TokenType::Operator(Operators::EnumConcat))),
+        "<>" => return Ok(("<>", TokenType::Operator(Operators::Concat))),
+        "<=" => return Ok(("<=", TokenType::Operator(Operators::LEq))),
+        ">=" => return Ok((">=", TokenType::Operator(Operators::GEq))),
+        "==" => return Ok(("==", TokenType::Operator(Operators::BEq))),
+        "!=" => return Ok(("!=", TokenType::Operator(Operators::BNEq))),
+        "<<" => return Ok(("<<", TokenType::Operator(Operators::Lshift))),
+        ">>" => return Ok((">>", TokenType::Operator(Operators::Rshift))),
+        "->" => return Ok(("->", TokenType::Operator(Operators::Into))),
+        ".." => return Ok(("..", TokenType::Operator(Operators::DoubleDot))),
+        "|>" => return Ok(("|>", TokenType::Operator(Operators::Pipe))),
         _ => {}
     }
     match string.chars().take(1).collect::<String>().as_str() {
-        "+" => return Ok(("+", Operators::Add)),
-        "-" => return Ok(("-", Operators::Subtract)),
-        "/" => return Ok(("/", Operators::Div)),
-        "*" => return Ok(("*", Operators::Mult)),
-        "%" => return Ok(("%", Operators::Modulo)),
-        "^" => return Ok(("^", Operators::Exp)),
-        "<" => return Ok(("<", Operators::LessThan)),
-        ">" => return Ok((">", Operators::GreaterThan)),
-        "=" => return Ok(("=", Operators::Equal)),
+        "+" => return Ok(("+", TokenType::Operator(Operators::Add))),
+        "-" => return Ok(("-", TokenType::Operator(Operators::Subtract))),
+        "/" => return Ok(("/", TokenType::Operator(Operators::Div))),
+        "*" => return Ok(("*", TokenType::Operator(Operators::Mult))),
+        "%" => return Ok(("%", TokenType::Operator(Operators::Modulo))),
+        "^" => return Ok(("^", TokenType::Operator(Operators::Exp))),
+        "<" => return Ok(("<", TokenType::Operator(Operators::LessThan))),
+        ">" => return Ok((">", TokenType::Operator(Operators::GreaterThan))),
+        "=" => return Ok(("=", TokenType::Operator(Operators::Equal))),
         _ => {}
     };
 
@@ -257,26 +300,87 @@ pub fn string_to_operator(string: &str) -> Result<(&str, Operators), &str> {
 }
 
 #[test]
-fn test_s_to_op() {
-    assert_eq!(string_to_operator("+"), Ok(("+", Operators::Add)));
-    assert_eq!(string_to_operator("-"), Ok(("-", Operators::Subtract)));
-    assert_eq!(string_to_operator("/"), Ok(("/", Operators::Div)));
-    assert_eq!(string_to_operator("*"), Ok(("*", Operators::Mult)));
-    assert_eq!(string_to_operator("%"), Ok(("%", Operators::Modulo)));
-    assert_eq!(string_to_operator("^"), Ok(("^", Operators::Exp)));
-    assert_eq!(string_to_operator("<"), Ok(("<", Operators::LessThan)));
-    assert_eq!(string_to_operator(">"), Ok((">", Operators::GreaterThan)));
-    assert_eq!(string_to_operator("="), Ok(("=", Operators::Equal)));
-    assert_eq!(string_to_operator("++"), Ok(("++", Operators::EnumConcat)));
-    assert_eq!(string_to_operator("<>"), Ok(("<>", Operators::Concat)));
-    assert_eq!(string_to_operator("<="), Ok(("<=", Operators::LEq)));
-    assert_eq!(string_to_operator(">="), Ok((">=", Operators::GEq)));
-    assert_eq!(string_to_operator("=="), Ok(("==", Operators::BEq)));
-    assert_eq!(string_to_operator("!="), Ok(("!=", Operators::BNEq)));
-    assert_eq!(string_to_operator("<<"), Ok(("<<", Operators::Lshift)));
-    assert_eq!(string_to_operator(">>"), Ok((">>", Operators::Rshift)));
-    assert_eq!(string_to_operator("->"), Ok(("->", Operators::Into)));
-    assert_eq!(string_to_operator(".."), Ok(("..", Operators::DoubleDot)));
+fn test_tokenize_operator() {
+    assert_eq!(
+        tokenize_operator("+"),
+        Ok(("+", TokenType::Operator(Operators::Add)))
+    );
+    assert_eq!(
+        tokenize_operator("-"),
+        Ok(("-", TokenType::Operator(Operators::Subtract)))
+    );
+    assert_eq!(
+        tokenize_operator("/"),
+        Ok(("/", TokenType::Operator(Operators::Div)))
+    );
+    assert_eq!(
+        tokenize_operator("*"),
+        Ok(("*", TokenType::Operator(Operators::Mult)))
+    );
+    assert_eq!(
+        tokenize_operator("%"),
+        Ok(("%", TokenType::Operator(Operators::Modulo)))
+    );
+    assert_eq!(
+        tokenize_operator("^"),
+        Ok(("^", TokenType::Operator(Operators::Exp)))
+    );
+    assert_eq!(
+        tokenize_operator("<"),
+        Ok(("<", TokenType::Operator(Operators::LessThan)))
+    );
+    assert_eq!(
+        tokenize_operator(">"),
+        Ok((">", TokenType::Operator(Operators::GreaterThan)))
+    );
+    assert_eq!(
+        tokenize_operator("="),
+        Ok(("=", TokenType::Operator(Operators::Equal)))
+    );
+    assert_eq!(
+        tokenize_operator("++"),
+        Ok(("++", TokenType::Operator(Operators::EnumConcat)))
+    );
+    assert_eq!(
+        tokenize_operator("<>"),
+        Ok(("<>", TokenType::Operator(Operators::Concat)))
+    );
+    assert_eq!(
+        tokenize_operator("<="),
+        Ok(("<=", TokenType::Operator(Operators::LEq)))
+    );
+    assert_eq!(
+        tokenize_operator(">="),
+        Ok((">=", TokenType::Operator(Operators::GEq)))
+    );
+    assert_eq!(
+        tokenize_operator("=="),
+        Ok(("==", TokenType::Operator(Operators::BEq)))
+    );
+    assert_eq!(
+        tokenize_operator("!="),
+        Ok(("!=", TokenType::Operator(Operators::BNEq)))
+    );
+    assert_eq!(
+        tokenize_operator("<<"),
+        Ok(("<<", TokenType::Operator(Operators::Lshift)))
+    );
+    assert_eq!(
+        tokenize_operator(">>"),
+        Ok((">>", TokenType::Operator(Operators::Rshift)))
+    );
+    assert_eq!(
+        tokenize_operator("->"),
+        Ok(("->", TokenType::Operator(Operators::Into)))
+    );
+    assert_eq!(
+        tokenize_operator(".."),
+        Ok(("..", TokenType::Operator(Operators::DoubleDot)))
+    );
+    assert_eq!(
+        tokenize_operator("|>"),
+        Ok(("|>", TokenType::Operator(Operators::Pipe)))
+    );
 }
 
 /*
@@ -293,7 +397,7 @@ pub enum Keywords {
     Include,   // for including C header files
     Struct,    // Defines a struct
     For,       // A for loop initiator
-    Continue,  // a loop continue ie br :loop_head
+    Continue,  // a loop continue ie br : loop_head
     Break,     // a loop break ie br : loop_end
     Func,      // for defining a function or method
     Fn,        // for defining a lambda / closure
@@ -311,94 +415,133 @@ pub enum Keywords {
     EoF,
 }
 
-pub fn string_to_keyword(string: &str) -> Result<(&str, Keywords), &str> {
+pub fn tokenize_keyword(string: &str) -> Result<(&str, TokenType), &str> {
     if string.starts_with("import") {
-        return Ok(("import", Keywords::Import));
+        return Ok(("import", TokenType::Keyword(Keywords::Import)));
     } else if string.starts_with("include") {
-        return Ok(("include", Keywords::Include));
+        return Ok(("include", TokenType::Keyword(Keywords::Include)));
     } else if string.starts_with("struct") {
-        return Ok(("struct", Keywords::Struct));
+        return Ok(("struct", TokenType::Keyword(Keywords::Struct)));
     } else if string.starts_with("for") {
-        return Ok(("for", Keywords::For));
+        return Ok(("for", TokenType::Keyword(Keywords::For)));
     } else if string.starts_with("continue") {
-        return Ok(("continue", Keywords::Continue));
+        return Ok(("continue", TokenType::Keyword(Keywords::Continue)));
     } else if string.starts_with("break") {
-        return Ok(("break", Keywords::Break));
+        return Ok(("break", TokenType::Keyword(Keywords::Break)));
     } else if string.starts_with("func") {
-        return Ok(("func", Keywords::Func));
+        return Ok(("func", TokenType::Keyword(Keywords::Func)));
     } else if string.starts_with("fn") {
-        return Ok(("fn", Keywords::Fn));
+        return Ok(("fn", TokenType::Keyword(Keywords::Fn)));
     } else if string.starts_with("match") {
-        return Ok(("match", Keywords::Match));
+        return Ok(("match", TokenType::Keyword(Keywords::Match)));
     } else if string.starts_with("cond") {
-        return Ok(("cond", Keywords::Cond));
+        return Ok(("cond", TokenType::Keyword(Keywords::Cond)));
     } else if string.starts_with("when") {
-        return Ok(("when", Keywords::When));
+        return Ok(("when", TokenType::Keyword(Keywords::When)));
     } else if string.starts_with("if") {
-        return Ok(("if", Keywords::If));
+        return Ok(("if", TokenType::Keyword(Keywords::If)));
     } else if string.starts_with("elif") {
-        return Ok(("elif", Keywords::Elif));
+        return Ok(("elif", TokenType::Keyword(Keywords::Elif)));
     } else if string.starts_with("else") {
-        return Ok(("else", Keywords::Else));
+        return Ok(("else", TokenType::Keyword(Keywords::Else)));
     } else if string.starts_with("return") {
-        return Ok(("return", Keywords::Return));
+        return Ok(("return", TokenType::Keyword(Keywords::Return)));
     } else if string.starts_with("interface") {
-        return Ok(("interface", Keywords::Interface));
+        return Ok(("interface", TokenType::Keyword(Keywords::Interface)));
     } else if string.starts_with("assert") {
-        return Ok(("assert", Keywords::Assert));
+        return Ok(("assert", TokenType::Keyword(Keywords::Assert)));
     } else if string.starts_with("panic") {
-        return Ok(("panic", Keywords::Panic));
+        return Ok(("panic", TokenType::Keyword(Keywords::Panic)));
     } else if string.starts_with("test") {
-        return Ok(("test", Keywords::Test));
+        return Ok(("test", TokenType::Keyword(Keywords::Test)));
     } else if string.starts_with("<EOF>") {
-        return Ok(("<EOF>", Keywords::EoF));
+        return Ok(("<EOF>", TokenType::Keyword(Keywords::EoF)));
     }
     Err("Err: could not match keyword.")
 }
 
 #[test]
-fn test_s_to_keyword() {
+fn test_tokenize_keyword() {
     assert_eq!(
-        string_to_keyword("import"),
-        Ok(("import", Keywords::Import))
+        tokenize_keyword("import"),
+        Ok(("import", TokenType::Keyword(Keywords::Import)))
     );
     assert_eq!(
-        string_to_keyword("include"),
-        Ok(("include", Keywords::Include))
+        tokenize_keyword("include"),
+        Ok(("include", TokenType::Keyword(Keywords::Include)))
     );
     assert_eq!(
-        string_to_keyword("struct"),
-        Ok(("struct", Keywords::Struct))
-    );
-    assert_eq!(string_to_keyword("for"), Ok(("for", Keywords::For)));
-    assert_eq!(
-        string_to_keyword("continue"),
-        Ok(("continue", Keywords::Continue))
-    );
-    assert_eq!(string_to_keyword("break"), Ok(("break", Keywords::Break)));
-    assert_eq!(string_to_keyword("func"), Ok(("func", Keywords::Func)));
-    assert_eq!(string_to_keyword("fn"), Ok(("fn", Keywords::Fn)));
-    assert_eq!(string_to_keyword("match"), Ok(("match", Keywords::Match)));
-    assert_eq!(string_to_keyword("cond"), Ok(("cond", Keywords::Cond)));
-    assert_eq!(string_to_keyword("when"), Ok(("when", Keywords::When)));
-    assert_eq!(string_to_keyword("if"), Ok(("if", Keywords::If)));
-    assert_eq!(string_to_keyword("elif"), Ok(("elif", Keywords::Elif)));
-    assert_eq!(string_to_keyword("else"), Ok(("else", Keywords::Else)));
-    assert_eq!(
-        string_to_keyword("return"),
-        Ok(("return", Keywords::Return))
+        tokenize_keyword("struct"),
+        Ok(("struct", TokenType::Keyword(Keywords::Struct)))
     );
     assert_eq!(
-        string_to_keyword("interface"),
-        Ok(("interface", Keywords::Interface))
+        tokenize_keyword("for"),
+        Ok(("for", TokenType::Keyword(Keywords::For)))
     );
     assert_eq!(
-        string_to_keyword("assert"),
-        Ok(("assert", Keywords::Assert))
+        tokenize_keyword("continue"),
+        Ok(("continue", TokenType::Keyword(Keywords::Continue)))
     );
-    assert_eq!(string_to_keyword("panic"), Ok(("panic", Keywords::Panic)));
-    assert_eq!(string_to_keyword("test"), Ok(("test", Keywords::Test)));
-    assert_eq!(string_to_keyword("<EOF>"), Ok(("<EOF>", Keywords::EoF)));
+    assert_eq!(
+        tokenize_keyword("break"),
+        Ok(("break", TokenType::Keyword(Keywords::Break)))
+    );
+    assert_eq!(
+        tokenize_keyword("func"),
+        Ok(("func", TokenType::Keyword(Keywords::Func)))
+    );
+    assert_eq!(
+        tokenize_keyword("fn"),
+        Ok(("fn", TokenType::Keyword(Keywords::Fn)))
+    );
+    assert_eq!(
+        tokenize_keyword("match"),
+        Ok(("match", TokenType::Keyword(Keywords::Match)))
+    );
+    assert_eq!(
+        tokenize_keyword("cond"),
+        Ok(("cond", TokenType::Keyword(Keywords::Cond)))
+    );
+    assert_eq!(
+        tokenize_keyword("when"),
+        Ok(("when", TokenType::Keyword(Keywords::When)))
+    );
+    assert_eq!(
+        tokenize_keyword("if"),
+        Ok(("if", TokenType::Keyword(Keywords::If)))
+    );
+    assert_eq!(
+        tokenize_keyword("elif"),
+        Ok(("elif", TokenType::Keyword(Keywords::Elif)))
+    );
+    assert_eq!(
+        tokenize_keyword("else"),
+        Ok(("else", TokenType::Keyword(Keywords::Else)))
+    );
+    assert_eq!(
+        tokenize_keyword("return"),
+        Ok(("return", TokenType::Keyword(Keywords::Return)))
+    );
+    assert_eq!(
+        tokenize_keyword("interface"),
+        Ok(("interface", TokenType::Keyword(Keywords::Interface)))
+    );
+    assert_eq!(
+        tokenize_keyword("assert"),
+        Ok(("assert", TokenType::Keyword(Keywords::Assert)))
+    );
+    assert_eq!(
+        tokenize_keyword("panic"),
+        Ok(("panic", TokenType::Keyword(Keywords::Panic)))
+    );
+    assert_eq!(
+        tokenize_keyword("test"),
+        Ok(("test", TokenType::Keyword(Keywords::Test)))
+    );
+    assert_eq!(
+        tokenize_keyword("<EOF>"),
+        Ok(("<EOF>", TokenType::Keyword(Keywords::EoF)))
+    );
 }
 
 pub fn tokenize_identifier(string: &str) -> Result<(&str, TokenType), &str> {
@@ -417,7 +560,25 @@ pub fn tokenize_identifier(string: &str) -> Result<(&str, TokenType), &str> {
     Err("Err: Could not parse identifier.")
 }
 
-enum Delimiters {
+pub fn tokenize_string_literal(string: &str) -> Result<(&str, TokenType), &str> {
+    if !string.starts_with('\"') || string.len() < 2 {
+        return Err("Not a string literal");
+    }
+    for i in 1..(string.len()) {
+        if string.as_bytes()[i] == b'\"' && string.as_bytes()[i - 1] != b'\\' {
+            return Ok((
+                string.get(0..i + 1).unwrap(),
+                TokenType::Literal(Literals::BuiltIn(BuiltinType::String)),
+            ));
+        }
+    }
+
+    // TODO: should panic
+    Err("Err: String literal never closed.")
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Delimiters {
     ParOpen,
     ParClose,
     BracketOpen,
@@ -428,6 +589,176 @@ enum Delimiters {
     Quote,
     Comma,
     Semicolon,
+}
+
+pub fn tokenize_delimiter(string: &str) -> Result<(&str, TokenType), &str> {
+    match string.chars().take(1).collect::<String>().as_str() {
+        "(" => return Ok(("(", TokenType::Delimiter(Delimiters::ParOpen))),
+        ")" => return Ok((")", TokenType::Delimiter(Delimiters::ParClose))),
+        "[" => return Ok(("[", TokenType::Delimiter(Delimiters::BracketOpen))),
+        "]" => return Ok(("]", TokenType::Delimiter(Delimiters::BracketClose))),
+        "{" => return Ok(("{", TokenType::Delimiter(Delimiters::BraceOpen))),
+        "}" => return Ok(("}", TokenType::Delimiter(Delimiters::BraceClose))),
+        "\"" => return Ok(("\"", TokenType::Delimiter(Delimiters::DQuote))),
+        "'" => return Ok(("'", TokenType::Delimiter(Delimiters::Quote))),
+        "," => return Ok((",", TokenType::Delimiter(Delimiters::Comma))),
+        ";" => return Ok((";", TokenType::Delimiter(Delimiters::Semicolon))),
+        _ => {}
+    };
+    Err("Err: Could not parse delimiter")
+}
+
+#[test]
+fn test_tokenize_delim() {
+    assert_eq!(
+        tokenize_delimiter("("),
+        Ok(("(", TokenType::Delimiter(Delimiters::ParOpen)))
+    );
+    assert_eq!(
+        tokenize_delimiter(")"),
+        Ok((")", TokenType::Delimiter(Delimiters::ParClose)))
+    );
+    assert_eq!(
+        tokenize_delimiter("["),
+        Ok(("[", TokenType::Delimiter(Delimiters::BracketOpen)))
+    );
+    assert_eq!(
+        tokenize_delimiter("]"),
+        Ok(("]", TokenType::Delimiter(Delimiters::BracketClose)))
+    );
+    assert_eq!(
+        tokenize_delimiter("{"),
+        Ok(("{", TokenType::Delimiter(Delimiters::BraceOpen)))
+    );
+    assert_eq!(
+        tokenize_delimiter("}"),
+        Ok(("}", TokenType::Delimiter(Delimiters::BraceClose)))
+    );
+    assert_eq!(
+        tokenize_delimiter("\""),
+        Ok(("\"", TokenType::Delimiter(Delimiters::DQuote)))
+    );
+    assert_eq!(
+        tokenize_delimiter("'"),
+        Ok(("'", TokenType::Delimiter(Delimiters::Quote)))
+    );
+    assert_eq!(
+        tokenize_delimiter(","),
+        Ok((",", TokenType::Delimiter(Delimiters::Comma)))
+    );
+    assert_eq!(
+        tokenize_delimiter(";"),
+        Ok((";", TokenType::Delimiter(Delimiters::Semicolon)))
+    );
+}
+
+fn tokenize_comment(string: &str) -> Result<(&str, TokenType), &str> {
+    if string.starts_with("//") {
+        let len = string.chars().take_while(|c| c != &'\n').count();
+        return Ok((string.get(0..len).unwrap_or(""), TokenType::Comment));
+    }
+    if string.starts_with("/*") {
+        let len = string
+            .match_indices("*/")
+            .next()
+            .unwrap_or((string.len() - 2, ""))
+            .0;
+        return Ok((string.get(0..len + 2).unwrap_or(""), TokenType::Comment));
+    }
+    Err("Err not implemented")
+}
+
+#[test]
+fn test_tokenize_comment() {
+    assert_eq!(
+        tokenize_comment("// asdflkj\n"),
+        Ok(("// asdflkj", TokenType::Comment))
+    );
+    assert_eq!(tokenize_comment("//\n"), Ok(("//", TokenType::Comment)));
+    assert_eq!(tokenize_comment("// \n"), Ok(("// ", TokenType::Comment)));
+    assert_eq!(tokenize_comment("//aa\n"), Ok(("//aa", TokenType::Comment)));
+    assert_eq!(tokenize_comment("//a"), Ok(("//a", TokenType::Comment)));
+    assert_eq!(
+        tokenize_comment("/* an inline multiline comment */"),
+        Ok(("/* an inline multiline comment */", TokenType::Comment))
+    );
+    assert_eq!(
+        tokenize_comment(
+            "/* a multiline 
+        * multiline 
+        * comment 
+        */"
+        ),
+        Ok((
+            "/* a multiline 
+        * multiline 
+        * comment 
+        */",
+            TokenType::Comment
+        ))
+    );
+    assert_eq!(
+        tokenize_comment("/* an unclosed multiline"),
+        Ok(("/* an unclosed multiline", TokenType::Comment))
+    );
+}
+
+pub fn tokenize_numeric_literal(string: &str) -> Result<(&str, TokenType), &str> {
+    let init_string = string.to_owned();
+    let is_negative = string.starts_with('-');
+    // if is_negative {
+    //     // string = string.get(1..).unwrap_or("")
+    // }
+    let mut n = "".to_owned();
+    if is_negative {
+        n.insert(0, '-');
+    }
+    let l = n.len();
+    let n = n + string
+        .get(l..)
+        .unwrap_or("")
+        .chars()
+        .take_while(|c| c.is_numeric())
+        .collect::<String>()
+        .as_str();
+    // string = string.get(n.len()..).unwrap_or("");
+
+    // if is_negative {
+    //     n.insert(0, '-');
+    // }
+    let ros = string.get(n.len()..).unwrap_or("");
+
+    if !n.is_empty() {
+        if !ros.is_empty() && ros.as_bytes()[0] == b'.' {
+            // either a float literal or an error
+            if ros.len() >= 2 {
+                if ros.as_bytes()[1] != b'.' {
+                    let dec = ros
+                        .get(1..)
+                        .unwrap_or("")
+                        .chars()
+                        .take_while(|c| c.is_numeric())
+                        .collect::<String>();
+                    let token_string = n + "." + &dec;
+                    return Ok((
+                        string.get(0..token_string.len()).unwrap_or(""),
+                        TokenType::Literal(Literals::Primitive(PrimitiveType::Int)),
+                    ));
+                } else {
+                    return Ok((
+                        string.get(0..n.len()).unwrap_or(""),
+                        TokenType::Literal(Literals::Primitive(PrimitiveType::Int)),
+                    ));
+                }
+            }
+        } else {
+            return Ok((
+                string.get(0..n.len()).unwrap_or(""),
+                TokenType::Literal(Literals::Primitive(PrimitiveType::Int)),
+            ));
+        }
+    }
+    Err("Err: could not parse numeric")
 }
 
 #[derive(Debug, Clone)]
@@ -446,67 +777,40 @@ pub struct Expression {
 
 pub fn tokenize(mut input_string: &str) -> Vec<Token> {
     let v = &mut vec![];
-    let mut max_run = 10;
+    let mut max_run = 3;
     // if string.len() > 1 {
     //     let mut ros = tokenize(string.get(1..).unwrap());
     //     v.append(&mut ros);
     // }
     // let mut input: &str = input_string;
-    // let tokenizers: Vec<fn &str -> Result<(&str, _), &str>> = vec![
-    //     // parse_keyword,
-    //     string_to_keyword,
-    //     string_to_operator,
-    //     string_to_type,
-    // ];
+    #[allow(clippy::type_complexity)]
+    let tokenizers: Vec<fn(&str) -> Result<(&str, TokenType), &str>> = vec![
+        // parse_keyword,
+        tokenize_comment,
+        tokenize_string_literal,
+        tokenize_numeric_literal,
+        tokenize_keyword,
+        tokenize_type,
+        tokenize_operator,
+        tokenize_delimiter,
+        tokenize_identifier,
+    ];
+
     println!("tokenize instr: {:?}", input_string);
     'tokenLoop: while !input_string.is_empty() && max_run > 0 {
-        input_string = input_string.trim();
-        match string_to_keyword(input_string) {
-            Ok((s, kw)) => {
-                v.push(Token {
-                    string: s.to_string(),
-                    token_type: TokenType::Keyword(kw),
-                });
-                input_string = input_string.get(s.len() + 1..).unwrap_or("");
-                continue 'tokenLoop;
+        input_string = input_string.trim_start();
+        for tokenizer in tokenizers.iter() {
+            match tokenizer(input_string) {
+                Ok((s, t_type)) => {
+                    v.push(Token {
+                        string: s.to_string(),
+                        token_type: t_type,
+                    });
+                    input_string = input_string.get(s.len()..).unwrap_or("");
+                    continue 'tokenLoop;
+                }
+                Err(s) => {}
             }
-            Err(s) => {}
-        }
-
-        match string_to_operator(input_string) {
-            Ok((s, op)) => {
-                v.push(Token {
-                    string: s.to_string(),
-                    token_type: TokenType::Operator(op),
-                });
-                input_string = input_string.get(s.len() + 1..).unwrap_or("");
-                continue 'tokenLoop;
-            }
-            Err(s) => {}
-        }
-
-        match string_to_type(input_string) {
-            Ok((s, typ)) => {
-                v.push(Token {
-                    string: s.to_string(),
-                    token_type: TokenType::Type(typ),
-                });
-                input_string = input_string.get(s.len() + 1..).unwrap_or("");
-                continue 'tokenLoop;
-            }
-            Err(s) => {}
-        }
-
-        match tokenize_identifier(input_string) {
-            Ok((s, typ)) => {
-                v.push(Token {
-                    string: s.to_string(),
-                    token_type: typ,
-                });
-                input_string = input_string.get(s.len() + 1..).unwrap_or("");
-                continue 'tokenLoop;
-            }
-            Err(s) => {}
         }
 
         println!("instr: {:?} | max_run: {}", input_string, max_run);

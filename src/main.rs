@@ -5,6 +5,7 @@
 
 extern crate regex;
 use regex::Regex;
+use std::fs;
 use std::string;
 
 mod parsers;
@@ -24,16 +25,31 @@ fn main() {
 
     // println!("In file {}", file_path);
 
-    // let contents = fs::read_to_string(file_path).expect("Should have been able to read the file");
-    // let file_path = "../hello.rho";
+    let file_path = "./rho_testfiles/hello.rho";
+    let contents = fs::read_to_string(file_path).expect("Should have been able to read the file");
     // let contents: &str = &fs::read_to_string(file_path).expect("Should have been able to read the file");fs::read_to_string(file_path).expect("Should have been able to read the file");
     // println!("{:?}", "abc".split_at(10));
 
-    let contents = "str s = \"rho_is_cool\"\n";
+    // let contents = "str s = \"rho_is_cool\"\n";
+//     let contents = "func main() {
+
+//     return 0 
+//     // alternatively: return :ok
+// }
+
+// l = fn x -> {
+//     return x + 1
+// }
+
+// 1..1
+// 10..1.
+// 1.0 1.0
+// 1.0.0
+// 2345 asdf";
 
     // // println!("{:?}", contents.split_once(|c: char| c.is_whitespace()));
     // println!("{:?}", contents);
-    println!("tokenize output: {:?}", tokenize(contents));
+    println!("tokenize output: {:?}", tokenize(contents.as_str()));
 
     // let s = "\"asdfklsdjfa\\\"\" asdf";
     // println!("{:?}", parse_literal(s))

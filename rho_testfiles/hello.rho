@@ -1,0 +1,36 @@
+
+import "strings"
+
+// a comment
+
+/*
+a multiline
+comment
+*/
+
+str s = "rho_is_cool"
+int i = 1
+int j = i
+float k = 1.0
+float f = k + j
+bool b = true
+bool a = k % j == 1
+
+s |> Print()
+
+fn main() {
+
+    return 0 
+    // alternatively: return :ok
+}
+
+l = fn x -> {
+    return x + 1
+}
+
+for i in range 0..10 {
+
+}
+while true {
+    
+}
