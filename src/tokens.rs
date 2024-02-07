@@ -1,18 +1,41 @@
 use std::fmt;
+use std::vec::Vec;
 
-#[derive(Clone)]
-pub struct Token {
-    pub string: String,
+#[derive(Clone, PartialEq, Copy)]
+pub struct Token<'a> {
+    pub string: &'a str,
     pub token_type: TokenType,
 }
 
-impl fmt::Debug for Token {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        writeln!(f, ":[{:?}, {:?}]", self.token_type, self.string)
+// impl<'a> FromIterator<&'a Token<'a>> for Token<'a> {
+//     fn from_iter<T: IntoIterator<Item = &'a Token<'a>>>(iter: T) -> Self {
+//         let mut v:Vec<&Token> = vec![];
+//         for i in iter {
+//             v.push(i);
+//         }
+//         v
+        
+//         // todo!()
+//     }
+// }
+impl<'a> FromIterator<&'a Token<'a>> for Vec<Token<'a>> {
+    fn from_iter<I>(iter: I) -> Self
+    where
+        I: IntoIterator<Item = &'a Token<'a>>,
+    {
+        iter.into_iter().cloned().collect()
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+impl fmt::Debug for Token<'_> {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, ":[{:?}, {:?}]", self.token_type, self.string)
+    }
+}
+
+
+#[derive(Debug, Clone, PartialEq, Copy)]
+/*  The top level token enum */
 pub enum TokenType {
     Type(Types),
     Literal(Literals),
@@ -22,14 +45,7 @@ pub enum TokenType {
     EoF,
     Identifier,
     Comment,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum ExpressionType {
-    Definition,   // <type> <ident> = <expression>
-    Calculation,  // <ident> <operator> <expression>
-    FunctionCall, // <functionName>(<parameterList>)
-    Literal,      // <a literal>
+    NewLine,
 }
 
 // For parser outputs, a parser can determine if it cannot parse the given input, or if there is an error state in the context of the input.
@@ -42,29 +58,29 @@ pub enum ParseResult<T> {
     Err,
 }
 
-pub fn match_expression(expression: Vec<Token>) -> ParseResult<Expression> {
-    // let iter = expression.iter();
-    // if matches!(expression.get(0).unwrap().token_type, TokenType::Type(_)) && matches!(expression.get(1).unwrap().token_type, TokenType::Identifier) && matches!(expression.get(2).unwrap().token_type, TokenType::Operator(Operators::Equal)) {
-    //             match match_expression(expression.get(3..).unwrap().to_vec()) {
-    //                 Err;
-    //             }
-    // }
-    ParseResult::Err
-}
+// pub fn match_expression(expression: Vec<Token>) -> ParseResult<Expression> {
+//     // let iter = expression.iter();
+//     // if matches!(expression.get(0).unwrap().token_type, TokenType::Type(_)) && matches!(expression.get(1).unwrap().token_type, TokenType::Identifier) && matches!(expression.get(2).unwrap().token_type, TokenType::Operator(Operators::Equal)) {
+//     //             match match_expression(expression.get(3..).unwrap().to_vec()) {
+//     //                 Err;
+//     //             }
+//     // }
+//     ParseResult::Err
+// }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub enum Types {
     Primitive(PrimitiveType),
     BuiltIn(BuiltinType),
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub enum Literals {
     Primitive(PrimitiveType),
     BuiltIn(BuiltinType),
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub enum PrimitiveType {
     Int,
     Float,
@@ -73,7 +89,7 @@ pub enum PrimitiveType {
     Atom,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub enum BuiltinType {
     // in order of importance
     String, // "\" my string of things {interpolated expression} "
@@ -219,7 +235,7 @@ fn test_tokenize_type() {
     );
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub enum Operators {
     Add,         // "+",
     EnumConcat,  // "++",
@@ -391,7 +407,7 @@ chan         else         goto         package      switch
 const        fallthrough  if           range        type
 continue     for          import       return       var
 */
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub enum Keywords {
     Import,    // for importing other rho files and modules
     Include,   // for including C header files
@@ -577,7 +593,45 @@ pub fn tokenize_string_literal(string: &str) -> Result<(&str, TokenType), &str> 
     Err("Err: String literal never closed.")
 }
 
-#[derive(Debug, Clone, PartialEq)]
+fn tokenize_atom_literal(string: &str) -> Result<(&str, TokenType), &str> {
+    if !string.starts_with(':') {
+        return Err("Not a string literal");
+    }
+    let atom_string = string
+        .get(1..)
+        .unwrap_or("")
+        .chars()
+        .take_while(|c| c.is_alphabetic())
+        .collect::<String>();
+
+    Ok((
+        string.get(0..atom_string.len() + 1).unwrap_or(""),
+        TokenType::Literal(Literals::Primitive(PrimitiveType::Atom)),
+    ))
+
+    // // TODO: should panic
+    // Err("Err: String literal never closed.")
+}
+
+#[test]
+fn test_tokenize_atom() {
+    assert_eq!(
+        tokenize_atom_literal(":atom"),
+        Ok((
+            ":atom",
+            TokenType::Literal(Literals::Primitive(PrimitiveType::Atom))
+        ))
+    );
+    assert_eq!(
+        tokenize_atom_literal(":at1om"),
+        Ok((
+            ":at",
+            TokenType::Literal(Literals::Primitive(PrimitiveType::Atom))
+        ))
+    );
+}
+
+#[derive(Debug, Clone, PartialEq, Copy)]
 pub enum Delimiters {
     ParOpen,
     ParClose,
@@ -588,6 +642,7 @@ pub enum Delimiters {
     DQuote,
     Quote,
     Comma,
+    Period,
     Semicolon,
 }
 
@@ -603,6 +658,7 @@ pub fn tokenize_delimiter(string: &str) -> Result<(&str, TokenType), &str> {
         "'" => return Ok(("'", TokenType::Delimiter(Delimiters::Quote))),
         "," => return Ok((",", TokenType::Delimiter(Delimiters::Comma))),
         ";" => return Ok((";", TokenType::Delimiter(Delimiters::Semicolon))),
+        "." => return Ok((".", TokenType::Delimiter(Delimiters::Period))),
         _ => {}
     };
     Err("Err: Could not parse delimiter")
@@ -649,6 +705,10 @@ fn test_tokenize_delim() {
     assert_eq!(
         tokenize_delimiter(";"),
         Ok((";", TokenType::Delimiter(Delimiters::Semicolon)))
+    );
+    assert_eq!(
+        tokenize_delimiter("."),
+        Ok((".", TokenType::Delimiter(Delimiters::Period)))
     );
 }
 
@@ -765,14 +825,9 @@ pub fn tokenize_numeric_literal(string: &str) -> Result<(&str, TokenType), &str>
 pub enum TokenValue {
     Int(i32),
     String(String),
-    Expression(Expression),
+    // Expression(Expression),
     Float(f32),
     Bool(bool),
-}
-
-#[derive(Debug, Clone)]
-pub struct Expression {
-    tokens: Vec<Token>,
 }
 
 pub fn tokenize(mut input_string: &str) -> Vec<Token> {
@@ -789,6 +844,7 @@ pub fn tokenize(mut input_string: &str) -> Vec<Token> {
         tokenize_comment,
         tokenize_string_literal,
         tokenize_numeric_literal,
+        tokenize_atom_literal,
         tokenize_keyword,
         tokenize_type,
         tokenize_operator,
@@ -798,12 +854,18 @@ pub fn tokenize(mut input_string: &str) -> Vec<Token> {
 
     println!("tokenize instr: {:?}", input_string);
     'tokenLoop: while !input_string.is_empty() && max_run > 0 {
+        if input_string.starts_with('\n') {
+            v.push(Token{
+                string: "\n",
+                token_type: TokenType::NewLine
+            })
+        }
         input_string = input_string.trim_start();
         for tokenizer in tokenizers.iter() {
             match tokenizer(input_string) {
                 Ok((s, t_type)) => {
                     v.push(Token {
-                        string: s.to_string(),
+                        string: s,
                         token_type: t_type,
                     });
                     input_string = input_string.get(s.len()..).unwrap_or("");
@@ -819,3 +881,134 @@ pub fn tokenize(mut input_string: &str) -> Vec<Token> {
 
     v.to_vec()
 }
+
+
+
+//     // parse an atom
+//     if string.starts_with(':') {
+//         let atom = string
+//             .get(1..)
+//             .unwrap_or("")
+//             .chars()
+//             .take_while(|c| c.is_alphanumeric())
+//             .collect::<String>();
+//         if !atom.is_empty() {
+//             return Ok((
+//                 Token {
+//                     string: ":".to_owned() + &atom,
+//                     token_type: TokenType::Type(Types::Primitive(PrimitiveType::Atom)),
+//                     value: TokenValue::String(":".to_owned() + &atom),
+//                 },
+//                 string.get(atom.len() + 1..).unwrap_or(""),
+//             ));
+//         }
+//     }
+
+//     if string.starts_with('\"') {
+//         return parse_string_literal(string);
+//     } else {
+//         Err("not a parsable type")
+//     }
+// }
+
+// pub fn parse_numeric_literal(mut string: &str) -> Result<(Token, &str), &str> {
+//     let is_negative = string.starts_with('-');
+//     if is_negative {
+//         string = string.get(1..).unwrap_or("")
+//     }
+//     let mut n = string
+//         .chars()
+//         .take_while(|c| c.is_numeric())
+//         .collect::<String>();
+//     string = string.get(n.len()..).unwrap_or("");
+
+//     if is_negative {
+//         n.insert(0, '-');
+//     }
+
+//     if !n.is_empty() {
+//         if !string.is_empty() && string.as_bytes()[0] == b'.' {
+//             // either a float literal or an error
+//             if string.len() >= 2 {
+//                 if string.as_bytes()[1] != b'.' {
+//                     let dec = string
+//                         .get(1..)
+//                         .unwrap_or("")
+//                         .chars()
+//                         .take_while(|c| c.is_numeric())
+//                         .collect::<String>();
+//                     let token_string = n + "." + &dec;
+//                     let lts = token_string.len();
+//                     match token_string.parse::<f32>() {
+//                         Ok(parsed_number) => {
+//                             return Ok((
+//                                 Token {
+//                                     string: token_string,
+//                                     token_type: TokenType::Type(Types::Primitive(
+//                                         PrimitiveType::Float,
+//                                     )),
+//                                     value: TokenValue::Float(parsed_number),
+//                                 },
+//                                 string.get(dec.len() + 1..).unwrap_or(""),
+//                             ));
+//                         }
+//                         Err(err) => return Err("Err: could not parse float"),
+//                     }
+//                 } else {
+//                     match n.parse() {
+//                         Ok(parsed_number) => {
+//                             return Ok((
+//                                 Token {
+//                                     string: n,
+//                                     token_type: TokenType::Type(Types::Primitive(
+//                                         PrimitiveType::Int,
+//                                     )),
+//                                     value: TokenValue::Int(parsed_number),
+//                                 },
+//                                 string,
+//                             ));
+//                         }
+//                         Err(err) => return Err("Err: could not parse int"),
+//                     }
+//                 }
+//             }
+//         } else {
+//             match n.parse() {
+//                 Ok(parsed_number) => {
+//                     return Ok((
+//                         Token {
+//                             string: n,
+//                             token_type: TokenType::Type(Types::Primitive(PrimitiveType::Int)),
+//                             value: TokenValue::Int(parsed_number),
+//                         },
+//                         string,
+//                     ));
+//                 }
+//                 Err(err) => return Err("Err: could not parse int"),
+//             }
+//         }
+//     }
+//     Err("Err: could not parse numeric")
+// }
+
+// pub fn parse_string_literal(string: &str) -> Result<(Token, &str), &str> {
+//     if !string.starts_with('\"') || string.len() < 2 {
+//         return Err("Not a string literal");
+//     }
+//     for i in 1..(string.len()) {
+//         if string.as_bytes()[i] == b'\"' && string.as_bytes()[i - 1] != b'\\' {
+//             let t = Token {
+//                 string: string.get(1..i - 1).unwrap().to_string(),
+//                 token_type: TokenType::Type(Types::BuiltIn(BuiltinType::String)),
+//                 value: TokenValue::String(string.get(1..i - 1).unwrap().to_string()),
+//             };
+//             let s = string.get(i + 1..).unwrap_or("");
+//             return Ok((t, s));
+//         }
+//     }
+
+//     // TODO: should panic
+//     Err("Err: String literal never closed.")
+// }
+
+// static PARSERS: Vec<pub fn(&str) -> Result<(Token, &str), &str>> = [parse_keyword, parse_type, parse_identifier].to_vec();
